@@ -1,0 +1,25 @@
+# OS generated trash
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+[Ee]hthumbs.db
+[Tt]humbs.db
+
+.vs/
+obj/
+bin/
+*.DotSettings.user
+UnityPath.prop.user
+
+/**/.vscode/launch.json
+/**/.vscode/.*
+
+.idea/**/riderModule.iml
+.idea/**/contentModel.xml
+.idea/**/encodings.xml
+.idea/**/misc.xml
+.idea/**/modules.xml
+.idea/**/workspace.xml
+.idea/**/dictionaries

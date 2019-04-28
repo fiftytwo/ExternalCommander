@@ -1,0 +1,10 @@
+﻿<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+    <Import Project="UnityPath.prop.user" Condition=" Exists('UnityPath.prop.user') "/>
+    <PropertyGroup>
+        <UnityRootPath Condition=" '$(UnityRootPath)' == '' and '$(OS)' == 'Unix' ">\Applications\Unity</UnityRootPath>
+        <UnityRootPath Condition=" '$(UnityRootPath)' == '' and '$(OS)' != 'Unix' ">C:\Program Files\Unity</UnityRootPath>
+
+        <UnityManagedPath Condition=" '$(OS)' == 'Unix' ">$(UnityRootPath)\Unity.app\Contents\Managed</UnityManagedPath>
+        <UnityManagedPath Condition=" '$(OS)' != 'Unix' ">$(UnityRootPath)\Editor\Data\Managed</UnityManagedPath>
+    </PropertyGroup>
+</Project>
