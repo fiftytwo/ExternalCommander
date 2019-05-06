@@ -7,9 +7,9 @@ using System.Runtime.InteropServices;
 [assembly: AssemblyTitle( "ResearchTestServer" )]
 [assembly: AssemblyDescription( "" )]
 [assembly: AssemblyConfiguration( "" )]
-[assembly: AssemblyCompany( "" )]
+[assembly: AssemblyCompany( "FIFTYTWO" )]
 [assembly: AssemblyProduct( "ResearchTestServer" )]
-[assembly: AssemblyCopyright( "Copyright ©  2019" )]
+[assembly: AssemblyCopyright( "Copyright © FIFTYTWO. All rights reserved." )]
 [assembly: AssemblyTrademark( "" )]
 [assembly: AssemblyCulture( "" )]
 

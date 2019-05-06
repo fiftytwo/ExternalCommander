@@ -4,12 +4,12 @@ using System.Runtime.InteropServices;
 // General Information about an assembly is controlled through the following 
 // set of attributes. Change these attribute values to modify the information
 // associated with an assembly.
-[assembly: AssemblyTitle( "ExternalCommanderPlugin" )]
-[assembly: AssemblyDescription( "" )]
+[assembly: AssemblyTitle( "External Commander Plugin" )]
+[assembly: AssemblyDescription( "Unity Editor plugin to receive external commands" )]
 [assembly: AssemblyConfiguration( "" )]
-[assembly: AssemblyCompany( "" )]
+[assembly: AssemblyCompany( "FIFTYTWO" )]
 [assembly: AssemblyProduct( "ExternalCommanderPlugin" )]
-[assembly: AssemblyCopyright( "Copyright ©  2019" )]
+[assembly: AssemblyCopyright( "Copyright © FIFTYTWO. All rights reserved." )]
 [assembly: AssemblyTrademark( "" )]
 [assembly: AssemblyCulture( "" )]
 

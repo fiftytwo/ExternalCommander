@@ -1,6 +1,4 @@
-﻿#define VERBOSE_LOG
-
-using System;
+﻿using System;
 using System.Reflection;
 using System.Threading;
 using UnityEngine;
@@ -159,15 +157,15 @@ namespace Fiftytwo
             return 1100;
         }
 
-        [System.Diagnostics.Conditional( "VERBOSE_LOG" )]
+        [System.Diagnostics.Conditional( "DEBUG" )]
         private static void Log ( string message )
         {
-            Debug.Log( $"[{Thread.CurrentThread.ManagedThreadId}] {Application.isPlaying}:{EditorApplication.isPlayingOrWillChangePlaymode} {message}" );
+            Debug.Log( $"[{Thread.CurrentThread.ManagedThreadId}] {message}" );
         }
 
         private static void LogError ( string message )
         {
-            Debug.LogError( $"[{Thread.CurrentThread.ManagedThreadId}] {Application.isPlaying}:{EditorApplication.isPlayingOrWillChangePlaymode} {message}" );
+            Debug.LogError( $"[{Thread.CurrentThread.ManagedThreadId}] {message}" );
         }
     }
 }
