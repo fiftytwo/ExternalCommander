@@ -60,7 +60,7 @@ namespace Fiftytwo
                     }
                     catch( Exception ex )
                     {
-                        LogError( $"Break accept loop because of uexpected error: {ex}" );
+                        LogError( $"Break accept loop because of unexpected error: {ex}" );
                         break;
                     }
                 }
