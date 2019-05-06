@@ -9,36 +9,26 @@ using UnityEditor;
 namespace Fiftytwo
 {
     [InitializeOnLoad]
-    internal class ExternalCommanderPlugin : ScriptableObject
+    internal static class ExternalCommanderPlugin
     {
         private const string UnixDomainSocketPath = "Temp/com.fiftytwo.ExternalCommander.socket";
         private const string MemoryMappedFileNamePrefix = "com.fiftytwo.ExternalCommander.";
 
-        private static ExternalCommanderPlugin _instance;
-
-        private CancellationTokenSource _cts;
+        private static CancellationTokenSource _cts;
 
         static ExternalCommanderPlugin ()
         {
-            SynchronizationContext.Current.Post( s =>
-            {
-                Log( $"Creating an instance of {typeof(ExternalCommanderPlugin)}..." );
-                ScriptableObject.CreateInstance<ExternalCommanderPlugin>();
-                Log( $"Instance of {typeof(ExternalCommanderPlugin)} has been created." );
-            }, null );
+            AssemblyReloadEvents.afterAssemblyReload += OnStartupServer;
+            AssemblyReloadEvents.beforeAssemblyReload += OnShutdownServer;
+            EditorApplication.quitting += OnQuitting;
         }
 
-        private async void OnEnable ()
+        private static async void OnStartupServer ()
         {
-            if( _instance != null )
-            {
-                Log( GetType() + " instance is already running, skip commands accepting" );
-                return;
-            }
+            Log( "OnStartupServer" );
 
-            EditorApplication.quitting += OnQuitting;
+            AssemblyReloadEvents.afterAssemblyReload -= OnStartupServer;
 
-            _instance = this;
             _cts = new CancellationTokenSource();
 
             using( var ipcServer = CreateIpcServer() )
@@ -77,7 +67,7 @@ namespace Fiftytwo
             }
         }
 
-        private IpcServer CreateIpcServer ()
+        private static IpcServer CreateIpcServer ()
         {
             var platformId = Environment.OSVersion.Platform;
             if( platformId == PlatformID.Unix || platformId == PlatformID.MacOSX )
@@ -91,7 +81,7 @@ namespace Fiftytwo
             return new IpcServerMemoryMappedFile( ipcChannelName );
         }
 
-        private string ProcessRequest ( string packedArgs )
+        private static string ProcessRequest ( string packedArgs )
         {
             string response;
 
@@ -134,20 +124,23 @@ namespace Fiftytwo
             return result?.ToString();
         }
 
-        private void OnDisable ()
+        private static void OnShutdownServer ()
         {
-            Log( $"OnDisable()" );
+            Log( $"OnShutdownServer()" );
+
+            AssemblyReloadEvents.beforeAssemblyReload -= OnShutdownServer;
+            DisconnectAndCleanup();
+        }
+
+        private static void OnQuitting ()
+        {
+            Log( $"OnQuitting()" );
+
             EditorApplication.quitting -= OnQuitting;
             DisconnectAndCleanup();
         }
 
-        private void OnQuitting ()
-        {
-            Log( $"OnQuitting()" );
-            DisconnectAndCleanup();
-        }
-
-        private void DisconnectAndCleanup ()
+        private static void DisconnectAndCleanup ()
         {
             if( _cts != null )
             {
@@ -155,7 +148,6 @@ namespace Fiftytwo
                 _cts.Cancel();
                 _cts.Dispose();
                 _cts = null;
-                _instance = null;
                 Log( $"Server has been canceled." );
             }
         }
@@ -170,14 +162,12 @@ namespace Fiftytwo
         [System.Diagnostics.Conditional( "VERBOSE_LOG" )]
         private static void Log ( string message )
         {
-            Debug.Log( "[" +
-                System.Threading.Thread.CurrentThread.ManagedThreadId + "] " + message );
+            Debug.Log( $"[{Thread.CurrentThread.ManagedThreadId}] {Application.isPlaying}:{EditorApplication.isPlayingOrWillChangePlaymode} {message}" );
         }
 
         private static void LogError ( string message )
         {
-            Debug.LogError( "[" +
-                System.Threading.Thread.CurrentThread.ManagedThreadId + "] " + message );
+            Debug.LogError( $"[{Thread.CurrentThread.ManagedThreadId}] {Application.isPlaying}:{EditorApplication.isPlayingOrWillChangePlaymode} {message}" );
         }
     }
 }
