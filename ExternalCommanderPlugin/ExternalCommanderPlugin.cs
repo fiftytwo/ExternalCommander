@@ -9,7 +9,7 @@ using UnityEditor;
 namespace Fiftytwo
 {
     [InitializeOnLoad]
-    public class ExternalCommanderPlugin : ScriptableObject
+    internal class ExternalCommanderPlugin : ScriptableObject
     {
         private const string UnixDomainSocketPath = "Temp/com.fiftytwo.ExternalCommander.socket";
         private const string MemoryMappedFileNamePrefix = "com.fiftytwo.ExternalCommander.";
@@ -17,7 +17,6 @@ namespace Fiftytwo
         private static ExternalCommanderPlugin _instance;
 
         private CancellationTokenSource _cts;
-        private string _ipcChannelName;
 
         static ExternalCommanderPlugin ()
         {
@@ -37,72 +36,59 @@ namespace Fiftytwo
                 return;
             }
 
+            EditorApplication.quitting += OnQuitting;
+
             _instance = this;
             _cts = new CancellationTokenSource();
 
-            IpcServer ipcServer = null;
+            using( var ipcServer = CreateIpcServer() )
+            {
+                while( !_cts.IsCancellationRequested )
+                {
+                    try
+                    {
+                        Log( $"Waiting for connection accept..." );
+                        using( var stream = await ipcServer.AcceptAsync( _cts.Token ).ConfigureAwait( true ) )
+                        {
+                            Log( $"Connection accepted and Stream received." );
 
+                            Log( $"Receiving request from client..." );
+                            var request = stream.ReceiveString();
+                            Log( $"Request received. Processing..." );
+                            var response = ProcessRequest( request );
+                            Log( $"Request processed. Responding..." );
+                            stream.SendString( response );
+                            Log( $"Response sent. Closing stream..." );
+                        }
+
+                        Log( $"Stream closed." );
+                    }
+                    catch( OperationCanceledException )
+                    {
+                        Log( $"Accept canceled, exiting accept loop..." );
+                        break;
+                    }
+                    catch( Exception ex )
+                    {
+                        LogError( $"Break accept loop because of uexpected error: {ex}" );
+                        break;
+                    }
+                }
+            }
+        }
+
+        private IpcServer CreateIpcServer ()
+        {
             var platformId = Environment.OSVersion.Platform;
             if( platformId == PlatformID.Unix || platformId == PlatformID.MacOSX )
             {
-                _ipcChannelName = UnixDomainSocketPath;
-                Log( $"Create IpcServerUnixDomainSocket '{_ipcChannelName}'" );
-                ipcServer = new IpcServerUnixDomainSocket( _ipcChannelName );
-            }
-            else
-            {
-                _ipcChannelName = MemoryMappedFileNamePrefix + PlayerSettings.productGUID.ToString( "N" );
-                Log( $"Create IpcServerMemoryMappedFile '{_ipcChannelName}'" );
-                ipcServer = new IpcServerMemoryMappedFile( _ipcChannelName );
+                Log( $"Create IpcServerUnixDomainSocket '{UnixDomainSocketPath}'" );
+                return new IpcServerUnixDomainSocket( UnixDomainSocketPath );
             }
 
-            while( !_cts.IsCancellationRequested )
-            {
-                try
-                {
-                    Log( $"Waiting for connection accept..." );
-                    using( var stream = await ipcServer.AcceptAsync( _cts.Token ).ConfigureAwait( true ) )
-                    {
-                        Log( $"Connection accepted and Stream received." );
-
-                        Log( $"Receiving request from client..." );
-                        var request = stream.ReceiveString();
-                        Log( $"Request received. Processing..." );
-                        var response = ProcessRequest( request );
-                        Log( $"Request processed. Responding..." );
-                        stream.SendString( response );
-                        Log( $"Response sent. Closing stream..." );
-                    }
-                    Log( $"Stream closed." );
-                }
-                catch( OperationCanceledException )
-                {
-                    Log( $"Accept canceled, exiting accept loop..." );
-                    break;
-                }
-                catch( Exception ex )
-                {
-                    LogError( $"Break accept loop because of uexpected error: {ex}" );
-                    break;
-                }
-            }
-
-            Log( $"Disposing IPC server..." );
-            ipcServer.Dispose();
-            Log( $"IPC server disposed." );
-        }
-
-        private void OnDisable ()
-        {
-            if( _cts != null )
-            {
-                Log( $"Canceling server '{_ipcChannelName}'..." );
-                _cts.Cancel();
-                _cts.Dispose();
-                _cts = null;
-                _instance = null;
-                Log( $"Server '{_ipcChannelName}' canceled." );
-            }
+            var ipcChannelName = MemoryMappedFileNamePrefix + PlayerSettings.productGUID.ToString( "N" );
+            Log( $"Create IpcServerMemoryMappedFile '{ipcChannelName}'" );
+            return new IpcServerMemoryMappedFile( ipcChannelName );
         }
 
         private string ProcessRequest ( string packedArgs )
@@ -146,6 +132,32 @@ namespace Fiftytwo
             }
 
             return result?.ToString();
+        }
+
+        private void OnDisable ()
+        {
+            Log( $"OnDisable()" );
+            EditorApplication.quitting -= OnQuitting;
+            DisconnectAndCleanup();
+        }
+
+        private void OnQuitting ()
+        {
+            Log( $"OnQuitting()" );
+            DisconnectAndCleanup();
+        }
+
+        private void DisconnectAndCleanup ()
+        {
+            if( _cts != null )
+            {
+                Log( $"Canceling server..." );
+                _cts.Cancel();
+                _cts.Dispose();
+                _cts = null;
+                _instance = null;
+                Log( $"Server has been canceled." );
+            }
         }
 
         private static int TestMethod ( params string[] args )
